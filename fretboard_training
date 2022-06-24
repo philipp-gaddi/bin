@@ -1,0 +1,25 @@
+#!/bin/bash
+
+not_a_quitter_yet=true
+input=""
+
+
+// while not quitting
+
+
+while [ "$not_a_quitter_yet" = true ]; do
+
+// generate question
+
+
+
+// check answer
+    read -n 2 -r input
+
+    
+
+// show points
+
+
+
+// if quitted, save points in table

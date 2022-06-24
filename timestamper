@@ -1,0 +1,22 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+  timestamp_file=/home/phil/bin/files/timestamp_file.txt
+else
+  timestamp_file=$1
+fi
+
+keep_going=true
+input=""
+
+echo "press space to record time, press k to exit"
+while [ "$keep_going" = true ]; do
+  read -s -n 1 -r input
+  if [ "$input" = "k" ]; then
+    keep_going=false
+  else
+    date -Iseconds >> $timestamp_file
+  fi
+done
+
+exit 0

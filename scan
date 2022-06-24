@@ -1,0 +1,17 @@
+#!/bin/bash
+
+
+scan_document() {
+
+	scanimage --device "epson2:net:192.168.0.246" --format=tiff --progress --resolution 600 --output-file "$1.tiff"
+	
+}
+
+if [ $# -eq 0 ]; then
+	exit 1
+else
+	#echo $1
+	scan_document "$@"
+fi
+
+

@@ -1,0 +1,59 @@
+#!/bin/bash
+
+todo_file=/home/phil/bin/files/todo.txt
+
+show_item() {
+	cat -b $todo_file
+	exit 0
+}
+
+add_item() {
+	if [ $# -eq 0  ]; then
+		echo "no todo item was given"
+		exit 1	
+	fi
+	
+	todo_item=""
+	for word in "$@"
+	do
+		todo_item="$todo_item $word"
+	done
+
+	echo $todo_item >> $todo_file
+	
+	exit 0
+}
+
+done_item() {
+	if [ $# -eq 0 ]; then
+		echo "no todo item index was given"
+		exit 1
+	fi
+
+	if [[ "$1" =~ ^[1-9]+$ ]]; then
+		line_count=$(wc -l < $todo_file)
+		if [[ $1 -gt $line_count ]]; then
+			echo "index out of range"
+			exit 1
+		else
+			sed -i "$1d" $todo_file
+		fi
+	else 
+		echo "index wasn't integer"
+		exit 1	
+	fi
+}
+
+# check if keyword is present (add or done) or no parameter
+if [ $# -eq 0 ]; then
+	show_item 
+elif [ "$1" = "add" ]; then
+	shift 1 # shifts parameter list
+	add_item "$@"
+elif [ "$1" = "done" ]; then
+	shift 1
+	done_item "$@"
+else 
+	echo "invalid parameter"
+	exit 1
+fi
