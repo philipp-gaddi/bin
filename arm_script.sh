@@ -3,31 +3,63 @@
 combine_images() {
   local folder="$1"
   local output_suffix="_arm"
+  local path_from_root="$(pwd)"
 
-  # Check if at least two files are found
-  local ao_file=$(find "$folder" -type f -iname "*_ao.*" -print -quit)
-  local rough_file=$(find "$folder" -type f -iname "*_rough.*" -print -quit)
-  local metal_file=$(find "$folder" -type f -iname "*_metal.*" -print -quit)
-
-  if [[ -z "$ao_file" && -z "$rough_file" ]] ||
-     [[ -z "$ao_file" && -z "$metal_file" ]] ||
-     [[ -z "$rough_file" && -z "$metal_file" ]]; then
-    echo "At least two image files with suffixes _ao, _rough, or _metal not found in $folder."
-    return 1
+  # finding the ambient occlusion, roughness and metal textures, case insensitive, and variations of the suffix
+  local ao_file=$(find "$folder" -type f \( -iname "*_ao*" -o -iname "*-ao*" \) -print -quit)
+  if [[ -n "$ao_file" ]]; then
+	ao_file="${path_from_root}/${ao_file}"
   fi
 
-  local base_name="${ao_file%_*}"
-  local file_extension="${ao_file##*.}"
+  local rough_file=$(find "$folder" -type f \( -iname "*_rough*" -o -iname "*-rough*" \) -print -quit)
+  if [[ -n "$rough_file" ]]; then
+	rough_file="${path_from_root}/${rough_file}"
+  fi
+
+  # if the folder name already has the word metal in it, the metal texture will have two occurances of the word metal in it.
+  if [[ "${1}" == *metal* ]]; then
+    local metal_file=$(find "$folder" -type f -iname "*metal*metal*" -print -quit)
+  else
+    local metal_file=$(find "$folder" -type f \( -iname "*_metal*" -o -iname "*-metal*" \) -print -quit)
+  fi
+  if [[ -n "$metal_file" ]]; then
+    metal_file="${path_from_root}/${metal_file}"
+  fi
+
+  # constructing the outputfilepath 
+  local base_name=""
+  local file_extension=""
+  
+  if [ -n "$ao_file" ]; then
+	base_name="${ao_file%%_ao*}"
+	base_name="${base_name%%-ao*}"
+	file_extension="${ao_file##*.}"
+  elif [ -n "$rough_file" ]; then
+	base_name="${rough_file%%_rough*}"
+	base_name="${base_name%%-rough*}"
+	file_extension="${rough_file##*.}"
+  elif [ -n "$metal_file" ]; then
+	base_name="${metal_file%%_metal*}"
+	base_name="${base_name%%-metal*}"
+	file_extension="${metal_file##*.}"
+  else
+	echo "no ao, rough or metal texture found in ${path_from_root}/${1}"
+	return 1
+  fi
+  
   local output_file="${base_name}${output_suffix}.${file_extension}"
 
-  convert \
-    \( "$ao_file" -channel R -separate +channel \) \
-    \( "$rough_file" -channel G -separate +channel \) \
-    \( "$metal_file" -channel B -separate +channel \) \
-    -combine \
-    "$output_file"
+  # creating arguments for convert
+  local args=($ao_file $rough_file $metal_file -combine $output_file ) 
 
-  echo "Combined image created: $output_file"
+  # creating the arm_file with convert and the args
+  convert "${args[@]}" 2>/dev/null
+
+  if [ $? -eq 0 ]; then
+    echo "Combined image created: $output_file"
+  else
+	echo "no combined image created for: $output_file"
+  fi
 }
 
 traverse_folder() {
@@ -39,6 +71,7 @@ traverse_folder() {
     return 1
   fi
 
+  # looping through all subfolders and applying combine images in the leaf folders
   find "$folder" -mindepth 1 -type d -not -path '*/.*' | while read -r dir; do
     if ! find "$dir" -mindepth 1 -type d | read; then
       combine_images "$dir"
@@ -52,5 +85,4 @@ if [ $# -eq 0 ]; then
   exit 1
 fi
 
-# Use the command line argument as the folder path
-folder_path="$1"
+traverse_folder "$1"
